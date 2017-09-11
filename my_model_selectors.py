@@ -71,7 +71,10 @@ class SelectorBIC(ModelSelector):
     # n = n_components
     # d = len(self.X[0])
     # parameters = n * n + 2 * d * n - 1
-
+    
+    these not work: @ https://github.com/ltfschoen/AIND-Recognizer/blob/master/my_model_selectors.py#L249
+        param = num_state * num_state + 2 * num_state  * sum(self.lengths) - 1
+        OR param = num_state * num_state + 2 * num_state  - 1   mine tried
     """
     def select(self):
         """ select the best model for self.this_word based on
@@ -89,7 +92,7 @@ class SelectorBIC(ModelSelector):
                                             random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
                     logL = model.score(self.X, self.lengths)
                 param = num_state * num_state + 2 * len(self.X[0]) - 1
-                BIC_score = (-2) * logL + math.log(len(self.X)) * param
+                BIC_score = (-2) * logL + math.log(sum(self.lengths)) * param
                 if BIC_score < best_score:
                     best_model = model
                     best_score = BIC_score
@@ -99,7 +102,6 @@ class SelectorBIC(ModelSelector):
 
         # print("best_score = ", best_score)
         return best_model
-
 
 class SelectorDIC(ModelSelector):
     ''' select best model based on Discriminative Information Criterion
@@ -141,13 +143,12 @@ class SelectorCV(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         seq_length = len(self.sequences)
-        n_split = int(seq_length / 3) if seq_length > 9 else min(seq_length, 3)
+        n_split = int(seq_length / 6) if seq_length > 9 else min(seq_length, 3)
         if n_split < 2:
             return None
         split_method = KFold(n_split)
         best_model = None
         best_score = float("-inf")
-        num_state = self.min_n_components
         for num_state in range(self.min_n_components, self.max_n_components+1):
             for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
                 self.X, self.lengths = combine_sequences(cv_train_idx, self.sequences)
