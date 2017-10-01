@@ -1,6 +1,7 @@
 import builtins
 import warnings
 import numpy as np
+import pandas as pd
 from asl_data import SinglesData
 
 
@@ -33,9 +34,29 @@ def recognize(models: dict, test_set: SinglesData):
                         logL = model.score(X, lengths)
                     all_score[word] = logL
                 except:
-                    pass
+                    all_score[word] = float("-inf")
         probabilities.append(all_score)
     guesses = [builtins.sorted(sd.items(),key=lambda x: x[1], reverse=True)[0][0] for sd in probabilities]
     return probabilities, guesses
 
+''' https://web.stanford.edu/class/cs124/lec/languagemodeling.pdf
+Reminder:The Chain Rule
+• Recall the definiton of condional probabilies
+• More variables:
+   P(A,B,C,D) = P(A)P(B|A)P(C|A,B)P(D|A,B,C)
+• The Chain Rule in General
+   P(x1,x2,x3,…,xn) = P(x1)P(x2|x1)P(x3|x1,x2)…P(xn|x1,…,xn,1)
+   
+N-gram : https://en.wikipedia.org/wiki/N-gram
+   https://stackoverflow.com/questions/14617601/implementing-ngrams-in-python
+   https://stackoverflow.com/questions/13423919/computing-n-grams-using-python
+   https://stackoverflow.com/questions/14617601/implementing-ngrams-in-python
 
+Selectors: http://avansp.github.io/2014/11/02/DIC-AIC-BIC.html
+   http://www.petrkeil.com/?p=836
+   https://arxiv.org/pdf/1307.5928.pdf
+   http://www.math.uni.wroc.pl/~mbogdan/Preprints/Dutta.pdf
+   http://www.columbia.edu/~jwp2128/Teaching/W4721/Spring2017/slides/lecture_4-25-17.pdf
+   http://www.sciencedirect.com/science/article/pii/S1877050916315198
+   
+'''

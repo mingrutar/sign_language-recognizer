@@ -1,5 +1,4 @@
 import math
-import statistics
 import warnings
 
 import numpy as np
@@ -62,7 +61,7 @@ class SelectorConstant(ModelSelector):
         return self.base_model(best_num_components)
 
 
-class SelectorBIC(ModelSelector):
+class SelectorBIC_orig(ModelSelector):
     """ select the model with the lowest Bayesian Information Criterion(BIC) score
 
     http://www2.imm.dtu.dk/courses/02433/doc/ch6_slides.pdf
@@ -100,8 +99,50 @@ class SelectorBIC(ModelSelector):
                 if self.verbose:
                     print("failure on {} with {} states".format(self.this_word, num_state))
 
-        # print("best_score = ", best_score)
         return best_model
+
+
+class SelectorBIC(ModelSelector):
+    """ select the model with the lowest Bayesian Information Criterion(BIC) score
+
+    http://www2.imm.dtu.dk/courses/02433/doc/ch6_slides.pdf
+    Bayesian information criteria: BIC = -2 * logL + p * logN
+    # MR: from https://discussions.udacity.com/t/bug-in-my-code-in-dic-selector-function-call-not-working-basic-python/337028/17
+    # n = n_components
+    # d = len(self.X[0])
+    # parameters = n * n + 2 * d * n - 1
+
+    these not work: @ https://github.com/ltfschoen/AIND-Recognizer/blob/master/my_model_selectors.py#L249
+        param = num_state * num_state + 2 * num_state  * sum(self.lengths) - 1
+        OR param = num_state * num_state + 2 * num_state  - 1   mine tried
+    """
+
+    def select(self):
+        """ select the best model for self.this_word based on
+        BIC score for n between self.min_n_components and self.max_n_components
+
+        :return: GaussianHMM object
+        """
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        best_model = None
+        best_score = float("inf")
+        for num_state in range(self.min_n_components, self.max_n_components + 1):
+            try:
+                with np.errstate(divide='ignore'):
+                    model = GaussianHMM(n_components=num_state, covariance_type="diag", n_iter=1000,
+                                        random_state=self.random_state, verbose=False).fit(self.X, self.lengths)
+                    logL = model.score(self.X, self.lengths)
+                param = num_state * num_state + 2 * num_state * len(self.X[0]) - 1
+                BIC_score = (-2) * logL + math.log(sum(self.lengths)) * param
+                if BIC_score < best_score:
+                    best_model = model
+                    best_score = BIC_score
+            except:
+                if self.verbose:
+                    print("failure on {} with {} states".format(self.this_word, num_state))
+
+        return best_model
+
 
 class SelectorDIC(ModelSelector):
     ''' select best model based on Discriminative Information Criterion
@@ -132,7 +173,6 @@ class SelectorDIC(ModelSelector):
                 if self.verbose:
                     print("failure on {} with {} states".format(self.this_word, num_state))
 
-        # print("best_score = ", best_score)
         return best_model
 
 class SelectorCV(ModelSelector):
@@ -164,6 +204,4 @@ class SelectorCV(ModelSelector):
                 except:
                     if self.verbose:
                         print("failure on {} with {} states".format(self.this_word, num_states))
-
-        # print("best_score = ", best_score)
         return best_model
